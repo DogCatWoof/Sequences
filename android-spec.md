@@ -5,7 +5,7 @@
 | Item | Value |
 |---|---|
 | Project ID | `autistic-8e840` |
-| Web API Key | `AIzaSyBjN0hFxGXPaWQQjuKd78pmdLCkkIFsuXA` |
+| Web API Key |  |
 | Auth | Firebase Auth — Google Sign-In only |
 | Firestore | Native mode, `us-central1` |
 | Indexes | See below |
