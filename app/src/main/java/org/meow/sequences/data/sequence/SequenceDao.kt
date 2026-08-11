@@ -26,19 +26,19 @@ interface SequenceDao {
     suspend fun deleteSequence(sequence: SequenceEntity)
 
     @Query("SELECT * FROM sequence_steps WHERE sequenceId = :sequenceId AND isDeleted = 0 ORDER BY position ASC")
-    fun getSteps(sequenceId: Long): Flow<List<SequenceStepEntity>>
+    fun getSteps(sequenceId: Long): Flow<List<StepEntity>>
 
     @Query("SELECT * FROM sequence_steps WHERE sequenceId = :sequenceId AND isDeleted = 0 ORDER BY position ASC")
-    suspend fun getStepsOnce(sequenceId: Long): List<SequenceStepEntity>
+    suspend fun getStepsOnce(sequenceId: Long): List<StepEntity>
 
     @Query("SELECT * FROM sequence_steps WHERE id = :id")
-    suspend fun getStepById(id: Long): SequenceStepEntity?
+    suspend fun getStepById(id: Long): StepEntity?
 
     @Insert
-    suspend fun insertStep(step: SequenceStepEntity): Long
+    suspend fun insertStep(step: StepEntity): Long
 
     @Delete
-    suspend fun deleteStep(step: SequenceStepEntity)
+    suspend fun deleteStep(step: StepEntity)
 
     @Query("DELETE FROM sequence_steps WHERE sequenceId = :sequenceId")
     suspend fun deleteStepsForSequence(sequenceId: Long)
@@ -59,13 +59,13 @@ interface SequenceDao {
     suspend fun getRunById(id: Long): SequenceRunEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertProgress(progress: SequenceStepProgressEntity)
+    suspend fun upsertProgress(progress: StepProgressEntity)
 
     @Query("SELECT * FROM sequence_step_progress WHERE runId = :runId")
-    fun getProgress(runId: Long): Flow<List<SequenceStepProgressEntity>>
+    fun getProgress(runId: Long): Flow<List<StepProgressEntity>>
 
     @Query("SELECT * FROM sequence_step_progress WHERE runId = :runId")
-    suspend fun getProgressOnce(runId: Long): List<SequenceStepProgressEntity>
+    suspend fun getProgressOnce(runId: Long): List<StepProgressEntity>
 
     @Query("SELECT * FROM sequences WHERE pendingFirestoreSync = 1 AND isDeleted = 0")
     suspend fun getPendingFirestoreSync(): List<SequenceEntity>
@@ -77,10 +77,10 @@ interface SequenceDao {
     suspend fun markSequenceFirestoreSynced(id: Long, firestoreId: String)
 
     @Query("SELECT * FROM sequence_steps WHERE pendingFirestoreSync = 1 AND isDeleted = 0")
-    suspend fun getPendingFirestoreStepSync(): List<SequenceStepEntity>
+    suspend fun getPendingFirestoreStepSync(): List<StepEntity>
 
     @Query("SELECT * FROM sequence_steps WHERE pendingFirestoreSync = 1 AND isDeleted = 1")
-    suspend fun getPendingFirestoreStepDelete(): List<SequenceStepEntity>
+    suspend fun getPendingFirestoreStepDelete(): List<StepEntity>
 
     @Query("UPDATE sequence_steps SET pendingFirestoreSync = 0, firestoreId = :firestoreId WHERE id = :id")
     suspend fun markStepFirestoreSynced(id: Long, firestoreId: String)
@@ -95,7 +95,7 @@ interface SequenceDao {
     suspend fun getByFirestoreId(firestoreId: String): SequenceEntity?
 
     @Query("SELECT * FROM sequence_steps WHERE firestoreId = :firestoreId LIMIT 1")
-    suspend fun getStepByFirestoreId(firestoreId: String): SequenceStepEntity?
+    suspend fun getStepByFirestoreId(firestoreId: String): StepEntity?
 
     @Query("SELECT * FROM sequence_runs WHERE firestoreId = :firestoreId LIMIT 1")
     suspend fun getRunByFirestoreId(firestoreId: String): SequenceRunEntity?
@@ -104,7 +104,7 @@ interface SequenceDao {
     suspend fun upsertSequence(sequence: SequenceEntity)
 
     @Upsert
-    suspend fun upsertStep(step: SequenceStepEntity)
+    suspend fun upsertStep(step: StepEntity)
 
     @Upsert
     suspend fun upsertRun(run: SequenceRunEntity)

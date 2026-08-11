@@ -9,8 +9,8 @@ import androidx.room.TypeConverters
 import org.meow.sequences.data.sequence.SequenceDao
 import org.meow.sequences.data.sequence.SequenceEntity
 import org.meow.sequences.data.sequence.SequenceRunEntity
-import org.meow.sequences.data.sequence.SequenceStepEntity
-import org.meow.sequences.data.sequence.SequenceStepProgressEntity
+import org.meow.sequences.data.sequence.StepEntity
+import org.meow.sequences.data.sequence.StepProgressEntity
 import java.time.Instant
 
 class InstantConverter {
@@ -24,11 +24,11 @@ class InstantConverter {
 @Database(
     entities = [
         SequenceEntity::class,
-        SequenceStepEntity::class,
+        StepEntity::class,
         SequenceRunEntity::class,
-        SequenceStepProgressEntity::class,
+        StepProgressEntity::class,
     ],
-    version = 1,
+    version = 3,
     exportSchema = false,
 )
 @TypeConverters(InstantConverter::class)

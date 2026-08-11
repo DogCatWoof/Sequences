@@ -34,7 +34,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "org.meow.autistic"
+        applicationId = "org.meow.sequences"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -82,12 +82,24 @@ tasks.register("run") {
     group = "install"
     description = "Builds, installs, and launches the debug APK on a connected device"
     doLast {
-        val process = ProcessBuilder("adb", "shell", "am", "start", "-n", "org.meow.autistic/.MainActivity").start()
+        val process = ProcessBuilder("adb", "shell", "am", "start", "-n", "org.meow.sequences/.MainActivity").start()
         process.waitFor()
     }
 }
 
 dependencies {
+    // Shared modules
+    implementation(project(":core:error"))
+    implementation(project(":core:diagnostics"))
+    implementation(project(":core:debug"))
+    implementation(project(":core:auth"))
+    implementation(project(":core:firestore"))
+    implementation(project(":core:notifications"))
+    implementation(project(":ui:theme"))
+    implementation(project(":ui:components"))
+    implementation(project(":ui:model"))
+    implementation(project(":di"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

@@ -46,7 +46,7 @@
         </provider>
 
         <receiver
-            android:name="org.meow.sequences.data.sequence.SequenceStepReceiver"
+            android:name="org.meow.sequences.data.sequence.StepReceiver"
             android:exported="false" />
     </application>
 </manifest>

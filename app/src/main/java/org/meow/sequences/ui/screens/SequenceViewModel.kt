@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.meow.sequences.data.sequence.SequenceEntity
 import org.meow.sequences.data.sequence.SequenceRepository
-import org.meow.sequences.data.sequence.SequenceStepEntity
+import org.meow.sequences.data.sequence.StepEntity
 
 /** Manages sequence definitions (create, delete, add/remove steps). Used in Settings. */
 class SequenceViewModel(private val repository: SequenceRepository) : ViewModel() {
@@ -17,7 +17,7 @@ class SequenceViewModel(private val repository: SequenceRepository) : ViewModel(
     val sequences: StateFlow<List<SequenceEntity>> = repository.getAllSequences()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun getSteps(sequenceId: Long): Flow<List<SequenceStepEntity>> = repository.getSteps(sequenceId)
+    fun getSteps(sequenceId: Long): Flow<List<StepEntity>> = repository.getSteps(sequenceId)
 
     fun addSequence(name: String) = viewModelScope.launch {
         repository.insertSequence(SequenceEntity(name = name.trim()))
@@ -30,7 +30,7 @@ class SequenceViewModel(private val repository: SequenceRepository) : ViewModel(
     fun addStep(sequenceId: Long, instruction: String, estimatedMinutes: Int?) = viewModelScope.launch {
         val existing = repository.getStepsOnce(sequenceId)
         repository.insertStep(
-            SequenceStepEntity(
+            StepEntity(
                 sequenceId = sequenceId,
                 instruction = instruction.trim(),
                 estimatedMinutes = estimatedMinutes,
@@ -39,7 +39,7 @@ class SequenceViewModel(private val repository: SequenceRepository) : ViewModel(
         )
     }
 
-    fun deleteStep(step: SequenceStepEntity) = viewModelScope.launch {
+    fun deleteStep(step: StepEntity) = viewModelScope.launch {
         repository.deleteStep(step)
     }
 }

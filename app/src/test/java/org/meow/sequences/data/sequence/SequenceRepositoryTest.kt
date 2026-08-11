@@ -19,7 +19,7 @@ class SequenceRepositoryTest {
     private lateinit var repository: SequenceRepository
 
     private val sequence = SequenceEntity(id = 1L, name = "Morning Routine")
-    private val step = SequenceStepEntity(id = 10L, sequenceId = 1L, instruction = "Brush teeth", position = 0)
+    private val step = StepEntity(id = 10L, sequenceId = 1L, instruction = "Brush teeth", position = 0)
 
     @Before
     fun setUp() {

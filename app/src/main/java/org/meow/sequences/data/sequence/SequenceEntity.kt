@@ -9,6 +9,8 @@ import java.time.Instant
 data class SequenceEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
+    val description: String = "",
+    val createdAt: Instant = Instant.now(),
     val firestoreId: String? = null,
     val lastModifiedAt: Instant = Instant.now(),
     val pendingFirestoreSync: Boolean = true,

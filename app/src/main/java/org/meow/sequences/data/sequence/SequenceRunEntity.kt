@@ -14,6 +14,7 @@ data class SequenceRunEntity(
     val sequenceId: Long,
     val startedAt: Instant,
     val completedAt: Instant? = null,
+    val stepRecordsJson: String = "[]",
     val firestoreId: String? = null,
     val lastModifiedAt: Instant = Instant.now(),
     val pendingFirestoreSync: Boolean = true,

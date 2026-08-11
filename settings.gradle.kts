@@ -25,3 +25,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Sequences"
 include(":app")
+includeBuild("../Shared")

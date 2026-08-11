@@ -29,7 +29,7 @@ object SequenceRunNotificationManager {
         val stepIndex = steps.indexOfFirst { it.id == currentStep.id } + 1
         val completeIntent = PendingIntent.getBroadcast(
             context, 0,
-            Intent(context, SequenceStepReceiver::class.java).apply {
+            Intent(context, StepReceiver::class.java).apply {
                 action = ACTION_COMPLETE_STEP
                 putExtra(EXTRA_RUN_ID, runId)
                 putExtra(EXTRA_STEP_ID, currentStep.id)
@@ -38,7 +38,7 @@ object SequenceRunNotificationManager {
         )
         val endIntent = PendingIntent.getBroadcast(
             context, 1,
-            Intent(context, SequenceStepReceiver::class.java).apply {
+            Intent(context, StepReceiver::class.java).apply {
                 action = ACTION_END_RUN
                 putExtra(EXTRA_RUN_ID, runId)
             },

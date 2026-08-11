@@ -82,7 +82,7 @@ class SequenceDaoTest {
     @Test
     fun insertStep_appearsInGetSteps() = runTest {
         val seqId = dao.insertSequence(SequenceEntity(name = "Routine"))
-        dao.insertStep(SequenceStepEntity(sequenceId = seqId, instruction = "Brush teeth", position = 0))
+        dao.insertStep(StepEntity(sequenceId = seqId, instruction = "Brush teeth", position = 0))
         val steps = dao.getSteps(seqId).first()
         assertEquals(1, steps.size)
         assertEquals("Brush teeth", steps[0].instruction)
@@ -91,9 +91,9 @@ class SequenceDaoTest {
     @Test
     fun getSteps_orderedByPosition() = runTest {
         val seqId = dao.insertSequence(SequenceEntity(name = "Routine"))
-        dao.insertStep(SequenceStepEntity(sequenceId = seqId, instruction = "Step C", position = 2))
-        dao.insertStep(SequenceStepEntity(sequenceId = seqId, instruction = "Step A", position = 0))
-        dao.insertStep(SequenceStepEntity(sequenceId = seqId, instruction = "Step B", position = 1))
+        dao.insertStep(StepEntity(sequenceId = seqId, instruction = "Step C", position = 2))
+        dao.insertStep(StepEntity(sequenceId = seqId, instruction = "Step A", position = 0))
+        dao.insertStep(StepEntity(sequenceId = seqId, instruction = "Step B", position = 1))
         val steps = dao.getSteps(seqId).first()
         assertEquals(listOf("Step A", "Step B", "Step C"), steps.map { it.instruction })
     }
@@ -101,8 +101,8 @@ class SequenceDaoTest {
     @Test
     fun deleteStepsForSequence_removesAllSteps() = runTest {
         val seqId = dao.insertSequence(SequenceEntity(name = "Routine"))
-        dao.insertStep(SequenceStepEntity(sequenceId = seqId, instruction = "Step 1", position = 0))
-        dao.insertStep(SequenceStepEntity(sequenceId = seqId, instruction = "Step 2", position = 1))
+        dao.insertStep(StepEntity(sequenceId = seqId, instruction = "Step 1", position = 0))
+        dao.insertStep(StepEntity(sequenceId = seqId, instruction = "Step 2", position = 1))
         dao.deleteStepsForSequence(seqId)
         assertTrue(dao.getSteps(seqId).first().isEmpty())
     }
@@ -146,9 +146,9 @@ class SequenceDaoTest {
     @Test
     fun upsertProgress_appearsInGetProgress() = runTest {
         val seqId = dao.insertSequence(SequenceEntity(name = "Routine"))
-        val stepId = dao.insertStep(SequenceStepEntity(sequenceId = seqId, instruction = "Step", position = 0))
+        val stepId = dao.insertStep(StepEntity(sequenceId = seqId, instruction = "Step", position = 0))
         val runId = dao.insertRun(SequenceRunEntity(sequenceId = seqId, startedAt = Instant.EPOCH))
-        dao.upsertProgress(SequenceStepProgressEntity(runId, stepId, Instant.EPOCH))
+        dao.upsertProgress(StepProgressEntity(runId, stepId, Instant.EPOCH))
         val progress = dao.getProgress(runId).first()
         assertEquals(1, progress.size)
         assertEquals(stepId, progress[0].stepId)
@@ -157,12 +157,12 @@ class SequenceDaoTest {
     @Test
     fun upsertProgress_replacesExistingEntry() = runTest {
         val seqId = dao.insertSequence(SequenceEntity(name = "Routine"))
-        val stepId = dao.insertStep(SequenceStepEntity(sequenceId = seqId, instruction = "Step", position = 0))
+        val stepId = dao.insertStep(StepEntity(sequenceId = seqId, instruction = "Step", position = 0))
         val runId = dao.insertRun(SequenceRunEntity(sequenceId = seqId, startedAt = Instant.EPOCH))
         val t1 = Instant.ofEpochMilli(1000L)
         val t2 = Instant.ofEpochMilli(2000L)
-        dao.upsertProgress(SequenceStepProgressEntity(runId, stepId, t1))
-        dao.upsertProgress(SequenceStepProgressEntity(runId, stepId, t2))
+        dao.upsertProgress(StepProgressEntity(runId, stepId, t1))
+        dao.upsertProgress(StepProgressEntity(runId, stepId, t2))
         val progress = dao.getProgress(runId).first()
         assertEquals(1, progress.size)
         assertEquals(t2, progress[0].completedAt)
@@ -202,8 +202,8 @@ class SequenceDaoTest {
     @Test
     fun getPendingFirestoreStepSync_excludesDeletedSteps() = runTest {
         val seqId = dao.insertSequence(SequenceEntity(name = "Routine"))
-        dao.insertStep(SequenceStepEntity(sequenceId = seqId, instruction = "Active", position = 0, pendingFirestoreSync = true))
-        dao.insertStep(SequenceStepEntity(sequenceId = seqId, instruction = "Deleted", position = 1, pendingFirestoreSync = true, isDeleted = true))
+        dao.insertStep(StepEntity(sequenceId = seqId, instruction = "Active", position = 0, pendingFirestoreSync = true))
+        dao.insertStep(StepEntity(sequenceId = seqId, instruction = "Deleted", position = 1, pendingFirestoreSync = true, isDeleted = true))
         val result = dao.getPendingFirestoreStepSync()
         assertEquals(1, result.size)
         assertEquals("Active", result[0].instruction)

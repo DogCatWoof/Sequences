@@ -4,134 +4,218 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import org.meow.sequences.data.sequence.SequenceEntity
 import org.meow.sequences.data.sequence.SequenceRunEntity
-import org.meow.sequences.data.sequence.SequenceStepEntity
+import org.meow.sequences.data.sequence.StepEntity
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+
+// ── Shared helpers ─────────────────────────────────────────────────────────────
+
+fun parseDocumentInstant(s: DocumentSnapshot, field: String): Instant? {
+  when (val value = s.get(field)) {
+    is Timestamp -> return value.toInstant()
+    is String -> {
+      try { return Instant.parse(value) } catch (_: Exception) {}
+      try { return DateTimeFormatter.ISO_DATE_TIME.parse(value, Instant::from) } catch (_: Exception) {}
+    }
+  }
+  return null
+}
+
+private fun parseCreatedAt(value: String): Instant {
+  if (value.isBlank()) return Instant.now()
+  return try {
+    Instant.parse(value)
+  } catch (_: Exception) {
+    try {
+      DateTimeFormatter.ISO_DATE_TIME.parse(value, Instant::from)
+    } catch (_: Exception) {
+      Instant.now()
+    }
+  }
+}
 
 // ── Sequence ──────────────────────────────────────────────────────────────────
 
-/** Firestore document model for [SequenceEntity]. Document ID = [SequenceEntity.firestoreId]. */
 data class SequenceDocument(
-    val name: String,
-    val isDeleted: Boolean,
-    val lastModifiedAt: Timestamp,
+  val name: String,
+  val description: String,
+  val stepIds: List<String>,
+  val isDeleted: Boolean,
+  val createdAt: String,
+  val lastModifiedAt: Instant,
+  val pendingFirestoreSync: Boolean,
 ) {
-    fun toMap(): Map<String, Any?> = mapOf(
-        "name" to name, "isDeleted" to isDeleted, "lastModifiedAt" to lastModifiedAt,
-    )
+  fun toMap(): Map<String, Any?> = mapOf(
+    "name" to name,
+    "description" to description.ifEmpty { null },
+    "stepIds" to stepIds,
+    "isDeleted" to isDeleted,
+    "createdAt" to createdAt,
+    "lastModifiedAt" to lastModifiedAt.toFirestoreTimestamp(),
+    "pendingFirestoreSync" to pendingFirestoreSync,
+  )
 
-    companion object {
-        fun fromSnapshot(s: DocumentSnapshot) = SequenceDocument(
-            name = s.getString("name") ?: "",
-            isDeleted = s.getBoolean("isDeleted") ?: false,
-            lastModifiedAt = s.getTimestamp("lastModifiedAt") ?: Timestamp.now(),
-        )
+  companion object {
+    fun fromSnapshot(s: DocumentSnapshot): SequenceDocument {
+      val spec = SpecSequence.fromFirestoreMap(s.data ?: emptyMap())
+      return SequenceDocument(
+        name = spec.name,
+        description = spec.description,
+        stepIds = spec.stepIds,
+        isDeleted = spec.isDeleted,
+        createdAt = spec.createdAt,
+        lastModifiedAt = parseDocumentInstant(s, "lastModifiedAt") ?: Instant.now(),
+        pendingFirestoreSync = spec.pendingFirestoreSync,
+      )
     }
+  }
 }
 
 fun SequenceEntity.toDocument() = SequenceDocument(
-    name = name, isDeleted = isDeleted, lastModifiedAt = lastModifiedAt.toFirestoreTimestamp(),
+  name = name,
+  description = description,
+  stepIds = emptyList(),
+  isDeleted = isDeleted,
+  createdAt = createdAt.toString(),
+  lastModifiedAt = lastModifiedAt,
+  pendingFirestoreSync = pendingFirestoreSync,
 )
 
 fun SequenceDocument.toEntity(firestoreId: String, localId: Long = 0) = SequenceEntity(
-    id = localId, firestoreId = firestoreId, name = name,
-    isDeleted = isDeleted, lastModifiedAt = lastModifiedAt.toInstant(),
-    pendingFirestoreSync = false,
+  id = localId,
+  firestoreId = firestoreId,
+  name = name,
+  description = description,
+  createdAt = parseCreatedAt(createdAt),
+  isDeleted = isDeleted,
+  lastModifiedAt = lastModifiedAt,
+  pendingFirestoreSync = false,
 )
 
-// ── SequenceStep ──────────────────────────────────────────────────────────────
+// ── Step (normalized, separate collection) ─────────────────────────────────────
 
-/**
- * Firestore document model for [SequenceStepEntity].
- * Document ID = [SequenceStepEntity.firestoreId].
- */
-data class SequenceStepDocument(
-    val sequenceFirestoreId: String,
-    val instruction: String,
-    val estimatedMinutes: Int?,
-    val position: Int,
-    val isDeleted: Boolean,
-    val lastModifiedAt: Timestamp,
+data class StepDocument(
+  val sequenceFirestoreId: String,
+  val instruction: String,
+  val estimatedMinutes: Int?,
+  val position: Int,
+  val specStepId: String,
+  val stepType: String,
+  val isDeleted: Boolean,
+  val lastModifiedAt: Instant,
 ) {
-    fun toMap(): Map<String, Any?> = mapOf(
-        "sequenceFirestoreId" to sequenceFirestoreId, "instruction" to instruction,
-        "estimatedMinutes" to estimatedMinutes, "position" to position,
-        "isDeleted" to isDeleted, "lastModifiedAt" to lastModifiedAt,
-    )
+  fun toMap(): Map<String, Any?> = mapOf(
+    "sequenceId" to sequenceFirestoreId,
+    "instruction" to instruction,
+    "estimatedMinutes" to estimatedMinutes,
+    "position" to position,
+    "specStepId" to specStepId,
+    "stepType" to stepType,
+    "isDeleted" to isDeleted,
+    "lastModifiedAt" to lastModifiedAt.toFirestoreTimestamp(),
+  )
 
-    companion object {
-        fun fromSnapshot(s: DocumentSnapshot) = SequenceStepDocument(
-            sequenceFirestoreId = s.getString("sequenceFirestoreId") ?: "",
-            instruction = s.getString("instruction") ?: "",
-            estimatedMinutes = s.getLong("estimatedMinutes")?.toInt(),
-            position = s.getLong("position")?.toInt() ?: 0,
-            isDeleted = s.getBoolean("isDeleted") ?: false,
-            lastModifiedAt = s.getTimestamp("lastModifiedAt") ?: Timestamp.now(),
-        )
+  companion object {
+    fun fromSnapshot(s: DocumentSnapshot): StepDocument {
+      val spec = SpecStep.fromFirestoreMap(s.data ?: emptyMap())
+      return StepDocument(
+        sequenceFirestoreId = spec.sequenceId,
+        instruction = spec.instruction,
+        estimatedMinutes = spec.estimatedMinutes,
+        position = spec.position,
+        specStepId = spec.specStepId,
+        stepType = spec.stepType,
+        isDeleted = spec.isDeleted,
+        lastModifiedAt = parseDocumentInstant(s, "lastModifiedAt") ?: Instant.now(),
+      )
     }
+  }
 }
 
-/**
- * @param sequenceFirestoreId The [SequenceEntity.firestoreId] of the parent sequence.
- */
-fun SequenceStepEntity.toDocument(sequenceFirestoreId: String) = SequenceStepDocument(
-    sequenceFirestoreId = sequenceFirestoreId, instruction = instruction,
-    estimatedMinutes = estimatedMinutes, position = position,
-    isDeleted = isDeleted, lastModifiedAt = lastModifiedAt.toFirestoreTimestamp(),
+fun StepEntity.toDocument(sequenceFirestoreId: String) = StepDocument(
+  sequenceFirestoreId = sequenceFirestoreId,
+  instruction = instruction,
+  estimatedMinutes = estimatedMinutes,
+  position = position,
+  specStepId = specStepId,
+  stepType = stepType,
+  isDeleted = isDeleted,
+  lastModifiedAt = lastModifiedAt,
 )
 
-fun SequenceStepDocument.toEntity(
-    firestoreId: String,
-    sequenceLocalId: Long,
-    localId: Long = 0,
-) = SequenceStepEntity(
-    id = localId, firestoreId = firestoreId, sequenceId = sequenceLocalId,
-    instruction = instruction, estimatedMinutes = estimatedMinutes, position = position,
-    isDeleted = isDeleted, lastModifiedAt = lastModifiedAt.toInstant(),
-    pendingFirestoreSync = false,
+fun StepDocument.toEntity(
+  firestoreId: String,
+  sequenceLocalId: Long,
+  localId: Long = 0,
+) = StepEntity(
+  id = localId,
+  firestoreId = firestoreId,
+  sequenceId = sequenceLocalId,
+  specStepId = specStepId,
+  instruction = instruction,
+  estimatedMinutes = estimatedMinutes,
+  position = position,
+  stepType = stepType,
+  isDeleted = isDeleted,
+  lastModifiedAt = lastModifiedAt,
+  pendingFirestoreSync = false,
 )
 
 // ── SequenceRun ───────────────────────────────────────────────────────────────
 
-/**
- * Firestore document model for [SequenceRunEntity].
- * Document ID = [SequenceRunEntity.firestoreId].
- */
 data class SequenceRunDocument(
-    val sequenceFirestoreId: String,
-    val startedAt: Timestamp,
-    val completedAt: Timestamp?,
-    val lastModifiedAt: Timestamp,
+  val sequenceFirestoreId: String,
+  val startedAt: Instant,
+  val completedAt: Instant?,
+  val lastModifiedAt: Instant,
+  val stepRecordsJson: String,
 ) {
-    fun toMap(): Map<String, Any?> = mapOf(
-        "sequenceFirestoreId" to sequenceFirestoreId,
-        "startedAt" to startedAt, "completedAt" to completedAt,
-        "lastModifiedAt" to lastModifiedAt,
+  fun toMap(): Map<String, Any?> {
+    val map = mutableMapOf<String, Any?>(
+      "sequenceId" to sequenceFirestoreId,
+      "startedAt" to startedAt.toFirestoreTimestamp(),
+      "completedAt" to completedAt?.toFirestoreTimestamp(),
+      "lastModifiedAt" to lastModifiedAt.toFirestoreTimestamp(),
     )
+    val records = SpecSequenceRun.stepRecordsFromJson(stepRecordsJson)
+    if (records.isNotEmpty()) map["stepRecords"] = records
+    return map
+  }
 
-    companion object {
-        fun fromSnapshot(s: DocumentSnapshot) = SequenceRunDocument(
-            sequenceFirestoreId = s.getString("sequenceFirestoreId") ?: "",
-            startedAt = s.getTimestamp("startedAt") ?: Timestamp.now(),
-            completedAt = s.getTimestamp("completedAt"),
-            lastModifiedAt = s.getTimestamp("lastModifiedAt") ?: Timestamp.now(),
-        )
+  companion object {
+    fun fromSnapshot(s: DocumentSnapshot): SequenceRunDocument {
+      val spec = SpecSequenceRun.fromFirestoreMap(s.data ?: emptyMap())
+      val recordsJson = SpecSequenceRun.stepRecordsToJson(spec.stepRecords)
+      return SequenceRunDocument(
+        sequenceFirestoreId = spec.sequenceId,
+        startedAt = parseDocumentInstant(s, "startedAt") ?: Instant.now(),
+        completedAt = parseDocumentInstant(s, "completedAt"),
+        lastModifiedAt = parseDocumentInstant(s, "lastModifiedAt") ?: Instant.now(),
+        stepRecordsJson = recordsJson,
+      )
     }
+  }
 }
 
 fun SequenceRunEntity.toDocument(sequenceFirestoreId: String) = SequenceRunDocument(
-    sequenceFirestoreId = sequenceFirestoreId,
-    startedAt = startedAt.toFirestoreTimestamp(),
-    completedAt = completedAt?.toFirestoreTimestamp(),
-    lastModifiedAt = lastModifiedAt.toFirestoreTimestamp(),
+  sequenceFirestoreId = sequenceFirestoreId,
+  startedAt = startedAt,
+  completedAt = completedAt,
+  lastModifiedAt = lastModifiedAt,
+  stepRecordsJson = stepRecordsJson,
 )
 
 fun SequenceRunDocument.toEntity(
-    firestoreId: String,
-    sequenceLocalId: Long,
-    localId: Long = 0,
+  firestoreId: String,
+  sequenceLocalId: Long,
+  localId: Long = 0,
 ) = SequenceRunEntity(
-    id = localId, firestoreId = firestoreId, sequenceId = sequenceLocalId,
-    startedAt = startedAt.toInstant(), completedAt = completedAt?.toInstant(),
-    lastModifiedAt = lastModifiedAt.toInstant(), pendingFirestoreSync = false,
+  id = localId,
+  firestoreId = firestoreId,
+  sequenceId = sequenceLocalId,
+  startedAt = startedAt,
+  completedAt = completedAt,
+  stepRecordsJson = stepRecordsJson,
+  lastModifiedAt = lastModifiedAt,
+  pendingFirestoreSync = false,
 )
-
-

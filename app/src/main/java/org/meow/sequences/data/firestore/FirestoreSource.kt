@@ -11,7 +11,7 @@ import java.time.Instant
 /**
  * Thin wrapper around the Firestore SDK.
  *
- * All paths rooted at `users/{uid}/{collection}/{docId}`.
+ * All paths rooted at `{collection}/{docId}`.
  * All methods run on [Dispatchers.IO].
  *
  * @param firestore Firestore instance; override in tests.
@@ -21,7 +21,7 @@ class FirestoreSource(
 ) {
 
     private fun colRef(uid: String, collection: String) =
-        firestore.collection("users").document(uid).collection(collection)
+        firestore.collection(collection)
 
     suspend fun upsert(uid: String, collection: String, docId: String, data: Map<String, Any?>) =
         withContext(Dispatchers.IO) {

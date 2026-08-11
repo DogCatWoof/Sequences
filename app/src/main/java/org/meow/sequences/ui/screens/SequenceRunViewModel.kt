@@ -14,16 +14,16 @@ import org.meow.sequences.data.sequence.SequenceEntity
 import org.meow.sequences.data.sequence.SequenceRepository
 import org.meow.sequences.data.sequence.SequenceRunEntity
 import org.meow.sequences.data.sequence.SequenceRunNotificationManager
-import org.meow.sequences.data.sequence.SequenceStepEntity
+import org.meow.sequences.data.sequence.StepEntity
 
 sealed class SequenceRunUiState {
     data object Idle : SequenceRunUiState()
     data class Active(
         val run: SequenceRunEntity,
         val sequence: SequenceEntity,
-        val steps: List<SequenceStepEntity>,
+        val steps: List<StepEntity>,
         val completedStepIds: Set<Long>,
-        val currentStep: SequenceStepEntity?,
+        val currentStep: StepEntity?,
         val progressFraction: Float,
     ) : SequenceRunUiState()
 }

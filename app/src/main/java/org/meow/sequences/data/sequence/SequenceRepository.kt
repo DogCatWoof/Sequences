@@ -11,9 +11,9 @@ class SequenceRepository(
     private val queryLogger: QueryLogger,
 ) {
     fun getAllSequences(): Flow<List<SequenceEntity>> = dao.getAll()
-    fun getSteps(sequenceId: Long): Flow<List<SequenceStepEntity>> = dao.getSteps(sequenceId)
+    fun getSteps(sequenceId: Long): Flow<List<StepEntity>> = dao.getSteps(sequenceId)
     fun getActiveRun(): Flow<SequenceRunEntity?> = dao.getActiveRun()
-    fun getProgress(runId: Long): Flow<List<SequenceStepProgressEntity>> = dao.getProgress(runId)
+    fun getProgress(runId: Long): Flow<List<StepProgressEntity>> = dao.getProgress(runId)
 
     suspend fun getById(id: Long): SequenceEntity? =
         timed("SequenceRepository.getById") { dao.getById(id) }
@@ -32,17 +32,17 @@ class SequenceRepository(
             dao.upsertSequence(sequence.copy(isDeleted = true, lastModifiedAt = now, pendingFirestoreSync = true))
         }
 
-    suspend fun insertStep(step: SequenceStepEntity): Long =
+    suspend fun insertStep(step: StepEntity): Long =
         timed("SequenceRepository.insertStep") {
             dao.insertStep(step.copy(lastModifiedAt = Instant.now(), pendingFirestoreSync = true))
         }
 
-    suspend fun deleteStep(step: SequenceStepEntity) =
+    suspend fun deleteStep(step: StepEntity) =
         timed("SequenceRepository.deleteStep") {
             dao.upsertStep(step.copy(isDeleted = true, lastModifiedAt = Instant.now(), pendingFirestoreSync = true))
         }
 
-    suspend fun getStepsOnce(sequenceId: Long): List<SequenceStepEntity> =
+    suspend fun getStepsOnce(sequenceId: Long): List<StepEntity> =
         timed("SequenceRepository.getStepsOnce") { dao.getStepsOnce(sequenceId) }
 
     suspend fun startRun(sequenceId: Long): Long =
@@ -60,7 +60,7 @@ class SequenceRepository(
 
     suspend fun completeStep(runId: Long, stepId: Long) =
         timed("SequenceRepository.completeStep") {
-            dao.upsertProgress(SequenceStepProgressEntity(runId, stepId, Instant.now()))
+            dao.upsertProgress(StepProgressEntity(runId, stepId, Instant.now()))
         }
 
     suspend fun getRunById(runId: Long): SequenceRunEntity? =
@@ -69,7 +69,7 @@ class SequenceRepository(
     suspend fun getActiveRunOnce(): SequenceRunEntity? =
         timed("SequenceRepository.getActiveRunOnce") { dao.getActiveRunOnce() }
 
-    suspend fun getProgressOnce(runId: Long): List<SequenceStepProgressEntity> =
+    suspend fun getProgressOnce(runId: Long): List<StepProgressEntity> =
         timed("SequenceRepository.getProgressOnce") { dao.getProgressOnce(runId) }
 
     private suspend inline fun <T> timed(label: String, block: suspend () -> T): T {

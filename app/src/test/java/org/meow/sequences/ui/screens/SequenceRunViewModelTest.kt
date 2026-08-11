@@ -24,8 +24,8 @@ import org.meow.sequences.data.sequence.SequenceEntity
 import org.meow.sequences.data.sequence.SequenceRepository
 import org.meow.sequences.data.sequence.SequenceRunEntity
 import org.meow.sequences.data.sequence.SequenceRunNotificationManager
-import org.meow.sequences.data.sequence.SequenceStepEntity
-import org.meow.sequences.data.sequence.SequenceStepProgressEntity
+import org.meow.sequences.data.sequence.StepEntity
+import org.meow.sequences.data.sequence.StepProgressEntity
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -38,8 +38,8 @@ class SequenceRunViewModelTest {
 
     private val sequence = SequenceEntity(id = 1L, name = "Morning Routine")
     private val steps = listOf(
-        SequenceStepEntity(id = 10L, sequenceId = 1L, instruction = "Step 1", position = 0),
-        SequenceStepEntity(id = 11L, sequenceId = 1L, instruction = "Step 2", position = 1),
+        StepEntity(id = 10L, sequenceId = 1L, instruction = "Step 1", position = 0),
+        StepEntity(id = 11L, sequenceId = 1L, instruction = "Step 2", position = 1),
     )
     private val run = SequenceRunEntity(id = 5L, sequenceId = 1L, startedAt = Instant.EPOCH)
 
@@ -85,7 +85,7 @@ class SequenceRunViewModelTest {
 
     @Test
     fun `Active state reflects completed steps`() = runTest {
-        val progress = listOf(SequenceStepProgressEntity(5L, 10L, Instant.EPOCH))
+        val progress = listOf(StepProgressEntity(5L, 10L, Instant.EPOCH))
         every { repository.getActiveRun() } returns flowOf(run)
         every { repository.getProgress(run.id) } returns flowOf(progress)
         coEvery { repository.getById(sequence.id) } returns sequence
@@ -111,7 +111,7 @@ class SequenceRunViewModelTest {
         coEvery { repository.getActiveRunOnce() } returns run
         coEvery { repository.getStepsOnce(sequence.id) } returns steps
         coEvery { repository.getProgressOnce(run.id) } returns listOf(
-            SequenceStepProgressEntity(run.id, 10L, Instant.EPOCH)
+            StepProgressEntity(run.id, 10L, Instant.EPOCH)
         )
         viewModel.completeStep(run.id, 10L)
         coVerify { repository.completeStep(run.id, 10L) }
@@ -123,8 +123,8 @@ class SequenceRunViewModelTest {
         coEvery { repository.getActiveRunOnce() } returns run
         coEvery { repository.getStepsOnce(sequence.id) } returns steps
         coEvery { repository.getProgressOnce(run.id) } returns listOf(
-            SequenceStepProgressEntity(run.id, 10L, Instant.EPOCH),
-            SequenceStepProgressEntity(run.id, 11L, Instant.EPOCH),
+            StepProgressEntity(run.id, 10L, Instant.EPOCH),
+            StepProgressEntity(run.id, 11L, Instant.EPOCH),
         )
         viewModel.completeStep(run.id, 11L)
         coVerify { repository.completeRun(run.id) }
